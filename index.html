@@ -430,7 +430,7 @@
         function initClickGame() {
             p1Wins = p2Wins = 0; currentRound = 1;
             document.querySelectorAll('[id^="p1-win-"], [id^="p2-win-"]').forEach(el => el.classList.add('opacity-30'));
-            if(isHost) startClickRound();
+            if (isHost) startClickRound();
         }
 
         function startClickRound() {
@@ -444,7 +444,7 @@
 
             let count = 3;
             let countdown = setInterval(() => {
-                if(count > 0) {
+                if (count > 0) {
                     let msg = `Round ${currentRound}... ${count}`;
                     showGlobalMessage(msg, "border-gray-300 text-gray-600");
                     conn.send({ type: 'GLOBAL_MSG', text: msg, colorClass: "border-gray-300 text-gray-600" });
@@ -501,10 +501,15 @@
             conn.send({ type: 'CLICK_END' });
             
             let winner = 0;
-            if(p1Clicks > p2Clicks) { winner = 1; p1Wins++; }
-            else if(p2Clicks > p1Clicks) { winner = 2; p2Wins++; }
+            if (p1Clicks > p2Clicks) { winner = 1; p1Wins++; }
+            else if (p2Clicks > p1Clicks) { winner = 2; p2Wins++; }
+			
+			// reset clicks
+			p1Clicks = p2Clicks = 0;
+            updateClicks(1, 0); updateClicks(2, 0);
+            conn.send({ type: 'SYNC_CLICKS', p1: 0, p2: 0 });
 
-            if(winner !== 0) {
+            if (winner !== 0) {
                 let winCount = winner === 1 ? p1Wins : p2Wins;
                 markRoundWin(winner, winCount);
                 conn.send({ type: 'ROUND_WIN', player: winner, round: winCount });
@@ -513,7 +518,7 @@
             let name1 = isHost ? myName : partnerName;
             let name2 = isHost ? partnerName : myName;
 
-            if(p1Wins === 2 || p2Wins === 2) {
+            if (p1Wins === 2 || p2Wins === 2) {
                 let champ = p1Wins === 2 ? name1 : name2;
                 let colorClass = p1Wins === 2 ? "border-blue-500 text-blue-600" : "border-pink-500 text-pink-600";
                 let msg = `MATCH OVER! ${champ} Wins!`;
@@ -529,7 +534,7 @@
         }
 
         function markRoundWin(player, roundNum) {
-            if(roundNum <= 2) {
+            if (roundNum <= 2) {
                 const star = document.getElementById(`p${player}-win-${roundNum}`);
                 star.classList.remove('opacity-30');
                 gsap.fromTo(star, { scale: 0, rotation: -180 }, { scale: 1, rotation: 0, duration: 0.6, ease: "elastic.out(1, 0.5)" });
@@ -546,14 +551,18 @@
         }
 
         function buildGrid(player, deck, backClass, iconColor) {
-            const grid = document.getElementById(`p${player}-memory-grid`);
+			const grid = document.getElementById(`p${player}-memory-grid`);
             grid.innerHTML = '';
             deck.forEach((emoji, index) => {
                 const card = document.createElement('div');
-                card.className = `flip-card p${player}-card-${index}`;
-                card.innerHTML = `<div class="flip-card-inner"><div class="flip-card-front text-gray-300">?</div><div class="flip-card-back ${backClass} ${iconColor} font-black">${emoji}</div></div>`;
-                if(player === playerNum) card.addEventListener('click', () => handlePuzzleClick(index, emoji, card));
-                grid.appendChild(card);
+				card.className = `flip-card p${player}-card-${index}`;
+				card.innerHTML = `<div class="flip-card-inner">
+				<div class="flip-card-front text-gray-300">&nbsp;</div>
+				<div class="flip-card-back ${backClass} ${iconColor} font-black">${emoji}</div>
+				</div>`;
+				
+				if (player === playerNum) card.addEventListener('click', () => handlePuzzleClick(index, emoji, card));
+				grid.appendChild(card);
             });
             gsap.from(`#p${player}-memory-grid .flip-card`, { scale: 0, opacity: 0, duration: 0.4, stagger: 0.02, ease: "back.out(1.2)" });
         }
@@ -566,7 +575,9 @@
             if (localState.flipped.length === 2) setTimeout(checkMatch, 600);
         }
 
-        function flipCardVisual(player, index) { document.querySelector(`.p${player}-card-${index}`).classList.add('flipped'); }
+        function flipCardVisual(player, index) {
+			document.querySelector(`.p${player}-card-${index}`).classList.add('flipped');
+		}
 
         function checkMatch() {
             const [card1, card2] = localState.flipped;
