@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Couples Playroom 💖 - 2P Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Nunito', sans-serif; overflow: hidden; }
+        
+        /* Rock-solid Card Flip CSS to ensure visibility */
+        .flip-card {
+            perspective: 1000px;
+            aspect-ratio: 1 / 1;
+        }
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.5s;
+            transform-style: preserve-3d;
+        }
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden; /* Safari */
+            backface-visibility: hidden;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+        }
+        .flip-card-front {
+            background-color: #fff;
+            border: 3px solid #e5e7eb;
+        }
+        .flip-card-back {
+            background-color: #fff;
+            transform: rotateY(180deg);
+        }
+        
+        /* Player Themes */
+        .p1-back { border-color: #93c5fd; background-color: #eff6ff; } /* Blue */
+        .p2-back { border-color: #f9a8d4; background-color: #fdf2f8; } /* Pink */
+    </style>
+</head>
+<body class="bg-gray-100 flex w-screen h-screen">
+
+    <div id="main-menu" class="absolute inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl border-4 border-rose-200 text-center max-w-md w-full mx-4">
+            <h1 class="text-4xl font-black text-rose-500 mb-2">Couples Battle ⚔️💖</h1>
+            <p class="text-gray-500 font-bold mb-8">P1 (Left) vs P2 (Right)</p>
+
+            <div class="space-y-4">
+                <button onclick="startGame('word-game')" class="w-full bg-rose-100 border-2 border-rose-400 text-rose-600 font-bold py-4 rounded-2xl shadow hover:bg-rose-200 hover:-translate-y-1 transition text-xl">
+                    📝 Word Scramble Race
+                </button>
+                <button onclick="startGame('click-game')" class="w-full bg-rose-100 border-2 border-rose-400 text-rose-600 font-bold py-4 rounded-2xl shadow hover:bg-rose-200 hover:-translate-y-1 transition text-xl">
+                    ⚡ Heartbeat Battle
+                </button>
+                <button onclick="startGame('puzzle-game')" class="w-full bg-rose-100 border-2 border-rose-400 text-rose-600 font-bold py-4 rounded-2xl shadow hover:bg-rose-200 hover:-translate-y-1 transition text-xl">
+                    🧩 Puzzle Match Race
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-controls" class="hidden absolute top-4 left-1/2 transform -translate-x-1/2 z-40 flex flex-col items-center">
+        <button onclick="showMenu()" class="bg-white px-6 py-2 rounded-full shadow-md font-bold text-gray-700 hover:bg-gray-100 border-2 border-gray-200 mb-2">
+            Exit to Menu
+        </button>
+        <div id="global-message" class="bg-white px-6 py-2 rounded-full shadow-lg font-black text-xl hidden"></div>
+    </div>
+
+    <div id="player1-screen" class="w-1/2 h-full bg-blue-50 border-r-4 border-dashed border-gray-300 relative p-6 flex flex-col items-center justify-center">
+        <div class="absolute top-4 left-4 bg-blue-200 text-blue-800 px-4 py-1 rounded-full font-bold shadow">Player 1</div>
+        
+        <div id="p1-word-game" class="game-view hidden w-full max-w-sm text-center">
+            <h3 class="text-2xl font-bold text-blue-500 mb-4">Unscramble!</h3>
+            <div class="bg-white p-6 rounded-2xl shadow-md border-2 border-blue-200">
+                <h4 class="p1-scrambled text-4xl font-black text-blue-600 tracking-widest mb-6">...</h4>
+                <input type="text" id="p1-word-input" class="w-full bg-blue-50 border-2 border-blue-300 rounded-xl px-4 py-3 text-center text-xl uppercase font-bold focus:outline-none focus:border-blue-500 mb-4" placeholder="Type here...">
+                <button onclick="checkWord(1)" class="w-full bg-blue-500 text-white font-bold py-3 rounded-xl hover:bg-blue-600 transition shadow-md">Submit</button>
+                <p id="p1-word-msg" class="mt-4 font-bold h-6 text-blue-500"></p>
+            </div>
+            <p class="mt-4 font-bold text-xl text-blue-600">Score: <span id="p1-word-score">0</span></p>
+        </div>
+
+        <div id="p1-click-game" class="game-view hidden w-full h-full flex flex-col items-center justify-center">
+            <h3 class="text-2xl font-bold text-blue-500 mb-4">Tap Fast!</h3>
+            <button id="p1-click-btn" class="w-64 h-64 bg-blue-400 rounded-full shadow-[0_10px_0_#2563eb] active:shadow-[0_0px_0_#2563eb] active:translate-y-[10px] transition-all flex items-center justify-center text-white text-6xl font-black border-4 border-white cursor-pointer select-none" disabled>
+                0
+            </button>
+        </div>
+
+        <div id="p1-puzzle-game" class="game-view hidden w-full max-w-sm flex flex-col items-center">
+            <h3 class="text-2xl font-bold text-blue-500 mb-4">Match All!</h3>
+            <div id="p1-memory-grid" class="grid grid-cols-4 gap-2 w-full"></div>
+        </div>
+    </div>
+
+    <div id="player2-screen" class="w-1/2 h-full bg-pink-50 relative p-6 flex flex-col items-center justify-center">
+        <div class="absolute top-4 right-4 bg-pink-200 text-pink-800 px-4 py-1 rounded-full font-bold shadow">Player 2</div>
+
+        <div id="p2-word-game" class="game-view hidden w-full max-w-sm text-center">
+            <h3 class="text-2xl font-bold text-pink-500 mb-4">Unscramble!</h3>
+            <div class="bg-white p-6 rounded-2xl shadow-md border-2 border-pink-200">
+                <h4 class="p2-scrambled text-4xl font-black text-pink-600 tracking-widest mb-6">...</h4>
+                <input type="text" id="p2-word-input" class="w-full bg-pink-50 border-2 border-pink-300 rounded-xl px-4 py-3 text-center text-xl uppercase font-bold focus:outline-none focus:border-pink-500 mb-4" placeholder="Type here...">
+                <button onclick="checkWord(2)" class="w-full bg-pink-500 text-white font-bold py-3 rounded-xl hover:bg-pink-600 transition shadow-md">Submit</button>
+                <p id="p2-word-msg" class="mt-4 font-bold h-6 text-pink-500"></p>
+            </div>
+            <p class="mt-4 font-bold text-xl text-pink-600">Score: <span id="p2-word-score">0</span></p>
+        </div>
+
+        <div id="p2-click-game" class="game-view hidden w-full h-full flex flex-col items-center justify-center">
+            <h3 class="text-2xl font-bold text-pink-500 mb-4">Tap Fast!</h3>
+            <button id="p2-click-btn" class="w-64 h-64 bg-pink-400 rounded-full shadow-[0_10px_0_#db2777] active:shadow-[0_0px_0_#db2777] active:translate-y-[10px] transition-all flex items-center justify-center text-white text-6xl font-black border-4 border-white cursor-pointer select-none" disabled>
+                0
+            </button>
+        </div>
+
+        <div id="p2-puzzle-game" class="game-view hidden w-full max-w-sm flex flex-col items-center">
+            <h3 class="text-2xl font-bold text-pink-500 mb-4">Match All!</h3>
+            <div id="p2-memory-grid" class="grid grid-cols-4 gap-2 w-full"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- Core Navigation & Helpers ---
+        function showMenu() {
+            document.getElementById('main-menu').classList.remove('hidden');
+            document.getElementById('game-controls').classList.add('hidden');
+            document.querySelectorAll('.game-view').forEach(el => el.classList.add('hidden'));
+            hideGlobalMessage();
+            clearInterval(clickTimer); // Stop timers if active
+        }
+
+        function startGame(gameType) {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('game-controls').classList.remove('hidden');
+            document.querySelectorAll('.game-view').forEach(el => el.classList.add('hidden'));
+
+            // Show appropriate views for both players
+            document.getElementById(`p1-${gameType}`).classList.remove('hidden');
+            document.getElementById(`p2-${gameType}`).classList.remove('hidden');
+
+            if (gameType === 'word-game') initWordGame();
+            if (gameType === 'click-game') initClickGame();
+            if (gameType === 'puzzle-game') initPuzzleGame();
+        }
+
+        function showGlobalMessage(text, colorClass) {
+            const msgEl = document.getElementById('global-message');
+            msgEl.innerText = text;
+            msgEl.className = `bg-white px-6 py-3 rounded-full shadow-lg font-black text-2xl border-4 ${colorClass}`;
+            msgEl.classList.remove('hidden');
+            gsap.fromTo(msgEl, { scale: 0.5, y: -50 }, { scale: 1, y: 0, duration: 0.5, ease: "back.out(2)" });
+        }
+
+        function hideGlobalMessage() {
+            document.getElementById('global-message').classList.add('hidden');
+        }
+
+        // --- Game 1: Word Scramble Race ---
+        const wordList = ["CUDDLE", "FOREVER", "ROMANCE", "KISSES", "HONEY", "SOULMATE", "DARLING", "DEVOTION"];
+        let currentSharedWord = "";
+        let p1WordScore = 0;
+        let p2WordScore = 0;
+
+        function initWordGame() {
+            p1WordScore = p2WordScore = 0;
+            updateWordScores();
+            nextWord();
+        }
+
+        function nextWord() {
+            currentSharedWord = wordList[Math.floor(Math.random() * wordList.length)];
+            let scrambled = currentSharedWord.split('').sort(() => 0.5 - Math.random()).join('');
+            
+            // Ensure it's actually scrambled
+            while(scrambled === currentSharedWord) {
+                scrambled = currentSharedWord.split('').sort(() => 0.5 - Math.random()).join('');
+            }
+
+            document.querySelector('.p1-scrambled').innerText = scrambled;
+            document.querySelector('.p2-scrambled').innerText = scrambled;
+            
+            document.getElementById('p1-word-input').value = "";
+            document.getElementById('p2-word-input').value = "";
+            document.getElementById('p1-word-msg').innerText = "";
+            document.getElementById('p2-word-msg').innerText = "";
+        }
+
+        function checkWord(playerNum) {
+            const inputEl = document.getElementById(`p${playerNum}-word-input`);
+            const msgEl = document.getElementById(`p${playerNum}-word-msg`);
+            const guess = inputEl.value.trim().toUpperCase();
+
+            if (guess === currentSharedWord) {
+                if(playerNum === 1) p1WordScore++; else p2WordScore++;
+                updateWordScores();
+                
+                showGlobalMessage(`Player ${playerNum} got it!`, playerNum === 1 ? 'border-blue-400 text-blue-600' : 'border-pink-400 text-pink-600');
+                setTimeout(() => { hideGlobalMessage(); nextWord(); }, 2000);
+            } else {
+                msgEl.innerText = "Nope!";
+                gsap.fromTo(inputEl, { x: -10 }, { x: 10, duration: 0.1, yoyo: true, repeat: 3 });
+                setTimeout(() => msgEl.innerText = "", 1500);
+            }
+        }
+
+        function updateWordScores() {
+            document.getElementById('p1-word-score').innerText = p1WordScore;
+            document.getElementById('p2-word-score').innerText = p2WordScore;
+        }
+
+        // --- Game 2: Click Battle ---
+        let p1Clicks = 0;
+        let p2Clicks = 0;
+        let clickTimer;
+
+        function initClickGame() {
+            p1Clicks = p2Clicks = 0;
+            const p1Btn = document.getElementById('p1-click-btn');
+            const p2Btn = document.getElementById('p2-click-btn');
+            
+            p1Btn.innerText = "0";
+            p2Btn.innerText = "0";
+            p1Btn.disabled = true;
+            p2Btn.disabled = true;
+
+            showGlobalMessage("Get Ready... 3", "border-gray-300 text-gray-600");
+            
+            let count = 3;
+            let countdown = setInterval(() => {
+                count--;
+                if(count > 0) {
+                    showGlobalMessage(`Get Ready... ${count}`, "border-gray-300 text-gray-600");
+                } else {
+                    clearInterval(countdown);
+                    startClicking();
+                }
+            }, 1000);
+        }
+
+        function startClicking() {
+            showGlobalMessage("GO! 10 Seconds!", "border-rose-500 text-rose-600");
+            const p1Btn = document.getElementById('p1-click-btn');
+            const p2Btn = document.getElementById('p2-click-btn');
+            p1Btn.disabled = false;
+            p2Btn.disabled = false;
+
+            let timeLeft = 10;
+            clickTimer = setInterval(() => {
+                timeLeft--;
+                showGlobalMessage(`Time left: ${timeLeft}s`, "border-gray-300 text-gray-600");
+                if (timeLeft <= 0) {
+                    clearInterval(clickTimer);
+                    endClickGame();
+                }
+            }, 1000);
+        }
+
+        document.getElementById('p1-click-btn').addEventListener('click', function() {
+            if(this.disabled) return;
+            p1Clicks++;
+            this.innerText = p1Clicks;
+            gsap.fromTo(this, { scale: 0.9 }, { scale: 1, duration: 0.1 });
+        });
+
+        document.getElementById('p2-click-btn').addEventListener('click', function() {
+            if(this.disabled) return;
+            p2Clicks++;
+            this.innerText = p2Clicks;
+            gsap.fromTo(this, { scale: 0.9 }, { scale: 1, duration: 0.1 });
+        });
+
+        function endClickGame() {
+            document.getElementById('p1-click-btn').disabled = true;
+            document.getElementById('p2-click-btn').disabled = true;
+            
+            let resultText = "It's a Tie!";
+            let colorClass = "border-gray-500 text-gray-700";
+            
+            if(p1Clicks > p2Clicks) { resultText = "Player 1 Wins!"; colorClass = "border-blue-500 text-blue-600"; }
+            if(p2Clicks > p1Clicks) { resultText = "Player 2 Wins!"; colorClass = "border-pink-500 text-pink-600"; }
+            
+            showGlobalMessage(resultText, colorClass);
+            setTimeout(() => showGlobalMessage("Click Exit to Menu to play again", "border-gray-300"), 3000);
+        }
+
+        // --- Game 3: Puzzle Match Race ---
+        const baseEmojis = ['💖', '🧸', '🌹', '💌', '💍', '🥂', '🍫', '💘'];
+        let p1State = { flipped: [], matched: 0 };
+        let p2State = { flipped: [], matched: 0 };
+
+        function initPuzzleGame() {
+            p1State = { flipped: [], matched: 0 };
+            p2State = { flipped: [], matched: 0 };
+            
+            // Create a shared shuffled deck so both players have the exact same board layout to be fair
+            const deck = [...baseEmojis, ...baseEmojis].sort(() => 0.5 - Math.random());
+            
+            buildGrid(1, deck, 'p1-back', 'text-blue-500');
+            buildGrid(2, deck, 'p2-back', 'text-pink-500');
+        }
+
+        function buildGrid(playerNum, deck, backClass, iconColorClass) {
+            const grid = document.getElementById(`p${playerNum}-memory-grid`);
+            grid.innerHTML = '';
+            
+            deck.forEach((emoji, index) => {
+                const card = document.createElement('div');
+                card.className = 'flip-card';
+                card.innerHTML = `
+                    <div class="flip-card-inner" id="p${playerNum}-card-${index}">
+                        <div class="flip-card-front text-gray-300">?</div>
+                        <div class="flip-card-back ${backClass} ${iconColorClass} font-black">${emoji}</div>
+                    </div>
+                `;
+                card.addEventListener('click', () => handleCardClick(playerNum, index, emoji, card));
+                grid.appendChild(card);
+            });
+            
+            gsap.from(`#p${playerNum}-memory-grid .flip-card`, { scale: 0, opacity: 0, duration: 0.4, stagger: 0.02, ease: "back.out(1.2)" });
+        }
+
+        function handleCardClick(playerNum, index, emoji, cardElement) {
+            const state = playerNum === 1 ? p1State : p2State;
+            
+            // Prevent flipping if already matched, already flipped, or if 2 cards are currently animating
+            if (cardElement.classList.contains('flipped') || cardElement.classList.contains('matched') || state.flipped.length >= 2) {
+                return;
+            }
+
+            cardElement.classList.add('flipped');
+            state.flipped.push({ index, emoji, element: cardElement });
+
+            if (state.flipped.length === 2) {
+                setTimeout(() => checkPuzzleMatch(playerNum), 600);
+            }
+        }
+
+        function checkPuzzleMatch(playerNum) {
+            const state = playerNum === 1 ? p1State : p2State;
+            const [card1, card2] = state.flipped;
+
+            if (card1.emoji === card2.emoji) {
+                card1.element.classList.add('matched');
+                card2.element.classList.add('matched');
+                gsap.to([card1.element, card2.element], { scale: 1.1, duration: 0.2, yoyo: true, repeat: 1 });
+                state.matched += 2;
+
+                if (state.matched === baseEmojis.length * 2) {
+                    showGlobalMessage(`Player ${playerNum} finished first!`, playerNum === 1 ? 'border-blue-500 text-blue-600' : 'border-pink-500 text-pink-600');
+                }
+            } else {
+                card1.element.classList.remove('flipped');
+                card2.element.classList.remove('flipped');
+            }
+            state.flipped = [];
+        }
+    </script>
+</body>
+</html>
