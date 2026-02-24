@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Couples Playroom 💖 - Online Multiplayer</title>
-	
-	<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-	<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-	
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    
     <style>
-        /* FIX: touch-action and user-select stop the browser from trying to scroll, zoom, or highlight while mashing */
         body { font-family: 'Nunito', sans-serif; overflow: hidden; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
         .flip-card { perspective: 1000px; aspect-ratio: 1 / 1; }
         .flip-card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.5s; transform-style: preserve-3d; }
@@ -23,8 +23,7 @@
         .p1-back { border-color: #93c5fd; background-color: #eff6ff; }
         .p2-back { border-color: #f9a8d4; background-color: #fdf2f8; }
         .disabled-side { pointer-events: none; opacity: 0.7; filter: grayscale(20%); }
-        /* Touch optimization for buttons */
-        input { -webkit-user-select: auto; user-select: auto; } /* Allow typing in inputs */
+        input { -webkit-user-select: auto; user-select: auto; } 
         .mash-btn { touch-action: none; outline: none; -webkit-tap-highlight-color: transparent; }
     </style>
 </head>
@@ -81,7 +80,10 @@
                 <h4 class="p1-scrambled text-3xl md:text-4xl font-black text-blue-600 tracking-widest mb-2 mt-4">...</h4>
                 <p class="word-pts-display text-sm font-bold text-blue-400 mb-4">10 pts</p>
                 <input type="text" id="p1-word-input" class="w-full bg-blue-50 border-2 border-blue-300 rounded-xl px-4 py-3 text-center text-xl uppercase font-bold mb-4" placeholder="Type here...">
-                <button onclick="submitWord()" class="w-full bg-blue-500 text-white font-bold py-3 rounded-xl shadow-md">Submit</button>
+                <div class="flex gap-2">
+                    <button onclick="submitWord()" class="w-2/3 bg-blue-500 text-white font-bold py-3 rounded-xl shadow-md">Submit</button>
+                    <button onclick="requestSkipWord()" class="w-1/3 bg-blue-300 text-white font-bold py-3 rounded-xl shadow-md hover:bg-blue-400">Skip</button>
+                </div>
             </div>
             <p class="mt-4 font-bold text-2xl text-blue-600">Score: <span id="p1-word-score">0</span></p>
         </div>
@@ -105,7 +107,10 @@
                 <h4 class="p2-scrambled text-3xl md:text-4xl font-black text-pink-600 tracking-widest mb-2 mt-4">...</h4>
                 <p class="word-pts-display text-sm font-bold text-pink-400 mb-4">10 pts</p>
                 <input type="text" id="p2-word-input" class="w-full bg-pink-50 border-2 border-pink-300 rounded-xl px-4 py-3 text-center text-xl uppercase font-bold mb-4" placeholder="Type here...">
-                <button onclick="submitWord()" class="w-full bg-pink-500 text-white font-bold py-3 rounded-xl shadow-md">Submit</button>
+                <div class="flex gap-2">
+                    <button onclick="submitWord()" class="w-2/3 bg-pink-500 text-white font-bold py-3 rounded-xl shadow-md">Submit</button>
+                    <button onclick="requestSkipWord()" class="w-1/3 bg-pink-300 text-white font-bold py-3 rounded-xl shadow-md hover:bg-pink-400">Skip</button>
+                </div>
             </div>
             <p class="mt-4 font-bold text-2xl text-pink-600">Score: <span id="p2-word-score">0</span></p>
         </div>
@@ -121,173 +126,175 @@
     </div>
 
     <script>
-		// --- MULTIPLAYER NETWORKING (Firebase) & LOBBY ---
+        // --- MULTIPLAYER NETWORKING (Firebase) & LOBBY ---
+
+        // 1. Paste your Firebase config here!
 		const firebaseConfig = {
-		  apiKey: "AIzaSyCnmdIZRbl1mi32bSut6btuAtPYs929HT4",
-		  authDomain: "play-with-u.firebaseapp.com",
-		  projectId: "play-with-u",
-		  storageBucket: "play-with-u.firebasestorage.app",
-		  databaseURL: "https://play-with-u-default-rtdb.asia-southeast1.firebasedatabase.app",
-		  messagingSenderId: "268351594134",
-		  appId: "1:268351594134:web:f21526693ba09c4e492cb7",
-		  measurementId: "G-4VTKETQSJM"
+			apiKey: "AIzaSyCnmdIZRbl1mi32bSut6btuAtPYs929HT4",
+			authDomain: "play-with-u.firebaseapp.com",
+			projectId: "play-with-u",
+			storageBucket: "play-with-u.firebasestorage.app",
+			databaseURL: "https://play-with-u-default-rtdb.asia-southeast1.firebasedatabase.app",
+			messagingSenderId: "268351594134",
+			appId: "1:268351594134:web:f21526693ba09c4e492cb7",
+			measurementId: "G-4VTKETQSJM"
 		};
-		firebase.initializeApp(firebaseConfig);
-		const db = firebase.database();
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-		let roomId = "";
-		let isHost = false;
-		let playerNum = 0;
-		let myName = "";
-		let partnerName = "";
+        let roomId = "";
+        let isHost = false;
+        let playerNum = 0;
+        let myName = "";
+        let partnerName = "";
 
-		// 2. The "Proxy" Connection Object (Allows old PeerJS code to work perfectly over Firebase)
-		const conn = {
-			send: function(data) {
-				if (!roomId) return;
-				data._sender = playerNum; // Tag who sent the event
+        // 2. The Proxy Connection Object
+        const conn = {
+            send: function(data) {
+                if (!roomId) return;
+                data._sender = playerNum; 
 
-				// Fast-clicking generates too many rapid events. We sync clicks directly to state.
-				if (data.type === 'CLICK_UPDATE') {
-					db.ref(`rooms/${roomId}/clicks/p${data.player}`).set(data.clicks);
-					return;
-				}
-				if (data.type === 'SYNC_CLICKS') {
-					db.ref(`rooms/${roomId}/clicks`).set({ p1: data.p1, p2: data.p2 });
-					return;
-				}
+                if (data.type === 'CLICK_UPDATE') {
+                    db.ref(`rooms/${roomId}/clicks/p${data.player}`).set(data.clicks);
+                    return;
+                }
+                if (data.type === 'SYNC_CLICKS') {
+                    db.ref(`rooms/${roomId}/clicks`).set({ p1: data.p1, p2: data.p2 });
+                    return;
+                }
 
-				// Standard Event Bus for everything else (starting games, matching cards, etc.)
-				db.ref(`rooms/${roomId}/lastEvent`).set({ ...data, _msgId: Math.random() });
-			}
-		};
+                db.ref(`rooms/${roomId}/lastEvent`).set({ ...data, _msgId: Math.random() });
+            }
+        };
 
-		// 3. Lobby Auto-Setup on Load
-		window.onload = () => {
-			roomId = Math.random().toString(36).substring(2, 7).toUpperCase();
-			document.getElementById('my-peer-id').innerText = roomId;
-			document.getElementById('lobby-status').innerText = "Server Active. Ready to connect!";
-			document.getElementById('host-panel').classList.remove('hidden');
-			document.getElementById('join-panel').classList.remove('hidden');
+        // 3. Auto-Setup Lobby
+        window.onload = () => {
+            roomId = Math.random().toString(36).substring(2, 7).toUpperCase();
+            document.getElementById('my-peer-id').innerText = roomId;
+            document.getElementById('lobby-status').innerText = "Server Active. Ready to connect!";
+            document.getElementById('host-panel').classList.remove('hidden');
+            document.getElementById('join-panel').classList.remove('hidden');
 
-			// Host reserves the room in the database immediately
-			db.ref(`rooms/${roomId}`).set({
-				hostName: document.getElementById('host-name').value || "Player 1",
-				createdAt: firebase.database.ServerValue.TIMESTAMP
-			});
+            db.ref(`rooms/${roomId}`).set({
+                hostName: document.getElementById('host-name').value || "Player 1",
+                createdAt: firebase.database.ServerValue.TIMESTAMP
+            });
 
-			// Update the database if the Host changes their nickname
-			document.getElementById('host-name').addEventListener('input', (e) => {
-				db.ref(`rooms/${roomId}`).update({ hostName: e.target.value });
-			});
+            document.getElementById('host-name').addEventListener('input', (e) => {
+                db.ref(`rooms/${roomId}`).update({ hostName: e.target.value });
+            });
 
-			// Listen for the Guest joining the room
-			db.ref(`rooms/${roomId}/guestName`).on('value', (snapshot) => {
-				if (snapshot.exists() && !partnerName && playerNum !== 2) {
-					isHost = true;
-					playerNum = 1;
-					myName = document.getElementById('host-name').value || "Player 1";
-					partnerName = snapshot.val();
-					setupNetworkListeners();
-					finalizeLobby();
-				}
-			});
-		};
+            db.ref(`rooms/${roomId}/guestName`).on('value', (snapshot) => {
+                if (snapshot.exists() && !partnerName && playerNum !== 2) {
+                    isHost = true;
+                    playerNum = 1;
+                    myName = document.getElementById('host-name').value || "Player 1";
+                    partnerName = snapshot.val();
+                    setupNetworkListeners();
+                    finalizeLobby();
+                }
+            });
+        };
 
-		function copyCode() {
-			const code = document.getElementById('my-peer-id').innerText;
-			navigator.clipboard.writeText(code);
-			const btn = document.getElementById('copy-btn');
-			btn.innerText = "Copied! ✨";
-			btn.classList.add('bg-green-200', 'text-green-700');
-			setTimeout(() => {
-				btn.innerText = "Copy";
-				btn.classList.remove('bg-green-200', 'text-green-700');
-			}, 2000);
-		}
+        function copyCode() {
+            const code = document.getElementById('my-peer-id').innerText;
+            navigator.clipboard.writeText(code);
+            const btn = document.getElementById('copy-btn');
+            btn.innerText = "Copied! ✨";
+            btn.classList.add('bg-green-200', 'text-green-700');
+            setTimeout(() => {
+                btn.innerText = "Copy";
+                btn.classList.remove('bg-green-200', 'text-green-700');
+            }, 2000);
+        }
 
-		function joinPeer() {
-			const targetId = document.getElementById('join-id').value.trim().toUpperCase();
-			if(!targetId) return;
+        function joinPeer() {
+            const targetId = document.getElementById('join-id').value.trim().toUpperCase();
+            if(!targetId) return;
 
-			document.getElementById('lobby-status').innerText = "Connecting to partner...";
+            document.getElementById('lobby-status').innerText = "Connecting to partner...";
 
-			db.ref(`rooms/${targetId}`).once('value').then((snapshot) => {
-				if (snapshot.exists()) {
-					roomId = targetId;
-					isHost = false;
-					playerNum = 2;
-					myName = document.getElementById('guest-name').value || "Player 2";
-					partnerName = snapshot.val().hostName || "Player 1";
+            db.ref(`rooms/${targetId}`).once('value').then((snapshot) => {
+                if (snapshot.exists()) {
+                    roomId = targetId;
+                    isHost = false;
+                    playerNum = 2;
+                    myName = document.getElementById('guest-name').value || "Player 2";
+                    partnerName = snapshot.val().hostName || "Player 1";
 
-					// Announce presence to the Host
-					db.ref(`rooms/${roomId}`).update({ guestName: myName });
+                    db.ref(`rooms/${roomId}`).update({ guestName: myName });
 
-					setupNetworkListeners();
-					finalizeLobby();
-				} else {
-					alert("Room not found! Check the code.");
-					document.getElementById('lobby-status').innerText = "Server Active. Ready to connect!";
-				}
-			});
-		}
+                    setupNetworkListeners();
+                    finalizeLobby();
+                } else {
+                    alert("Room not found! Check the code.");
+                    document.getElementById('lobby-status').innerText = "Server Active. Ready to connect!";
+                }
+            });
+        }
 
-		function setupNetworkListeners() {
-			// A. Listen for standard game events
-			db.ref(`rooms/${roomId}/lastEvent`).on('value', (snapshot) => {
-				const data = snapshot.val();
-				if (!data) return;
-				if (data._sender === playerNum) return; // Ignore our own outgoing events
+        function setupNetworkListeners() {
+            db.ref(`rooms/${roomId}/lastEvent`).on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (!data || data._sender === playerNum) return; 
 
-				// EXACT mapping from your old PeerJS logic
-				if(data.type === 'START_GAME') startGameLocal(data.game, data.payload);
-				if(data.type === 'MENU') showMenuLocal();
-				if(data.type === 'GLOBAL_MSG') showGlobalMessage(data.text, data.colorClass);
+                if(data.type === 'START_GAME') startGameLocal(data.game, data.payload);
+                if(data.type === 'MENU') showMenuLocal();
+                if(data.type === 'GLOBAL_MSG') showGlobalMessage(data.text, data.colorClass);
 
-				if(data.type === 'WORD_SYNC') syncWord(data.wordInfo);
-				if(data.type === 'WORD_TICK') document.querySelectorAll('.word-timer-display').forEach(el => el.innerText = data.time);
-				if(data.type === 'WORD_SCORE') updateWordScore(data.player, data.score);
+                // Word Game Sync
+                if(data.type === 'WORD_SYNC') syncWord(data.wordInfo);
+                if(data.type === 'WORD_TICK') document.querySelectorAll('.word-timer-display').forEach(el => el.innerText = data.time);
+                if(data.type === 'WORD_SCORE') updateWordScore(data.player, data.score);
+                if(data.type === 'SKIP_WORD' && isHost) {
+                    showGlobalMessage("Word Skipped!", "border-gray-400 text-gray-500");
+                    generateNextWord();
+                }
 
-				if(data.type === 'CLICK_START') document.getElementById(`p${playerNum}-click-btn`).disabled = false;
-				if(data.type === 'CLICK_END') document.getElementById(`p${playerNum}-click-btn`).disabled = true;
-				if(data.type === 'ROUND_WIN') markRoundWin(data.player, data.round);
+                // Click Game Sync
+                if(data.type === 'CLICK_RESET') {
+                    p1Clicks = 0; p2Clicks = 0;
+                    updateClicks(1, 0); updateClicks(2, 0);
+                }
+                if(data.type === 'CLICK_START') document.getElementById(`p${playerNum}-click-btn`).disabled = false;
+                if(data.type === 'CLICK_END') document.getElementById(`p${playerNum}-click-btn`).disabled = true;
+                if(data.type === 'ROUND_WIN') markRoundWin(data.player, data.round);
 
-				if(data.type === 'FLIP_CARD') flipCardVisual(data.player, data.index);
-				if(data.type === 'MATCH_CARDS') matchCardsVisual(data.player, data.index1, data.index2);
-				if(data.type === 'FLIP_REVERT') {
-					document.querySelector(`.p${data.player}-card-${data.index1}`).classList.remove('flipped');
-					document.querySelector(`.p${data.player}-card-${data.index2}`).classList.remove('flipped');
-				}
-			});
+                // Puzzle Game Sync
+                if(data.type === 'FLIP_CARD') flipCardVisual(data.player, data.index);
+                if(data.type === 'MATCH_CARDS') matchCardsVisual(data.player, data.index1, data.index2);
+                if(data.type === 'FLIP_REVERT') {
+                    document.querySelector(`.p${data.player}-card-${data.index1}`).classList.remove('flipped');
+                    document.querySelector(`.p${data.player}-card-${data.index2}`).classList.remove('flipped');
+                }
+            });
 
-			// B. Listen for rapid click state separately
-			db.ref(`rooms/${roomId}/clicks`).on('value', (snapshot) => {
-				const clicks = snapshot.val();
-				if (clicks) {
-					// Only update the other player's button visually
-					if (playerNum === 1 && clicks.p2 !== undefined) updateClicks(2, clicks.p2);
-					if (playerNum === 2 && clicks.p1 !== undefined) updateClicks(1, clicks.p1);
-				}
-			});
-		}
+            db.ref(`rooms/${roomId}/clicks`).on('value', (snapshot) => {
+                const clicks = snapshot.val();
+                if (clicks) {
+                    if (playerNum === 1 && clicks.p2 !== undefined) updateClicks(2, clicks.p2);
+                    if (playerNum === 2 && clicks.p1 !== undefined) updateClicks(1, clicks.p1);
+                }
+            });
+        }
 
-		function finalizeLobby() {
-			document.getElementById('lobby-screen').classList.add('hidden');
-			document.getElementById('main-menu').classList.remove('hidden');
-			
-			document.getElementById('p1-name-tag').innerText = isHost ? `${myName} (You)` : `${partnerName}`;
-			document.getElementById('p2-name-tag').innerText = isHost ? `${partnerName}` : `${myName} (You)`;
+        function finalizeLobby() {
+            document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+            
+            document.getElementById('p1-name-tag').innerText = isHost ? `${myName} (You)` : `${partnerName}`;
+            document.getElementById('p2-name-tag').innerText = isHost ? `${partnerName}` : `${myName} (You)`;
 
-			if(isHost) {
-				document.getElementById('player2-screen').classList.add('disabled-side');
-				document.getElementById('menu-subtitle').innerText = `Select a game to play against ${partnerName}!`;
-				document.getElementById('exit-btn').classList.remove('hidden');
-			} else {
-				document.getElementById('player1-screen').classList.add('disabled-side');
-				document.getElementById('game-buttons').classList.add('hidden');
-				document.getElementById('menu-subtitle').innerText = `Waiting for ${partnerName} to pick a game...`;
-			}
-		}
+            if(isHost) {
+                document.getElementById('player2-screen').classList.add('disabled-side');
+                document.getElementById('menu-subtitle').innerText = `Select a game to play against ${partnerName}!`;
+                document.getElementById('exit-btn').classList.remove('hidden');
+            } else {
+                document.getElementById('player1-screen').classList.add('disabled-side');
+                document.getElementById('game-buttons').classList.add('hidden');
+                document.getElementById('menu-subtitle').innerText = `Waiting for ${partnerName} to pick a game...`;
+            }
+        }
 
         // --- GLOBAL UI HELPERS ---
         let activeIntervals = [];
@@ -317,8 +324,10 @@
             if(!isHost) return;
             let payload = {};
             if(gameType === 'puzzle-game') {
-                const baseEmojis = ['💖', '🧸', '🌹', '💌', '💍', '🥂', '🍫', '💘'];
-                payload.deck = [...baseEmojis, ...baseEmojis].sort(() => 0.5 - Math.random());
+                // Expanded list of emojis for Variety!
+                const allEmojis = ['💖', '🧸', '🌹', '💌', '💍', '🥂', '🍫', '💘', '🎀', '🍓', '🐶', '🐱', '🦋', '🌸', '🍩', '🍒', '🌻', '🌙', '🍑', '🧁'];
+                const selected = allEmojis.sort(() => 0.5 - Math.random()).slice(0, 8);
+                payload.deck = [...selected, ...selected].sort(() => 0.5 - Math.random());
             }
             startGameLocal(gameType, payload);
             conn.send({ type: 'START_GAME', game: gameType, payload: payload });
@@ -407,6 +416,14 @@
             }
         }
 
+        function requestSkipWord() {
+            conn.send({ type: 'SKIP_WORD' });
+            if (isHost) {
+                showGlobalMessage("Word Skipped!", "border-gray-400 text-gray-500");
+                generateNextWord();
+            }
+        }
+
         function updateWordScore(player, score) {
             if(player === 1) p1WordScore = score; else p2WordScore = score;
             document.getElementById(`p${player}-word-score`).innerText = score;
@@ -421,22 +438,27 @@
             
             showGlobalMessage(`Time's Up! ${resultText}`, colorClass);
             conn.send({ type: 'GLOBAL_MSG', text: `Time's Up! ${resultText}`, colorClass: colorClass });
+
+            // Auto-jump to menu
+            setTimeout(() => { if (isHost) requestMenu(); }, 4000);
         }
 
-        // --- GAME 2: CLICK BATTLE (Fixed Sync) ---
+        // --- GAME 2: CLICK BATTLE ---
         let p1Clicks = 0; let p2Clicks = 0; 
         let p1Wins = 0; let p2Wins = 0; let currentRound = 1;
 
         function initClickGame() {
             p1Wins = p2Wins = 0; currentRound = 1;
             document.querySelectorAll('[id^="p1-win-"], [id^="p2-win-"]').forEach(el => el.classList.add('opacity-30'));
-            if (isHost) startClickRound();
+            if(isHost) startClickRound();
         }
 
         function startClickRound() {
             p1Clicks = p2Clicks = 0;
             updateClicks(1, 0); updateClicks(2, 0);
-            // Tell guest to reset their click counters
+            
+            // Force reset on the remote player's side
+            conn.send({ type: 'CLICK_RESET' }); 
             conn.send({ type: 'SYNC_CLICKS', p1: 0, p2: 0 });
             
             document.getElementById('p1-click-btn').disabled = true;
@@ -444,7 +466,7 @@
 
             let count = 3;
             let countdown = setInterval(() => {
-                if (count > 0) {
+                if(count > 0) {
                     let msg = `Round ${currentRound}... ${count}`;
                     showGlobalMessage(msg, "border-gray-300 text-gray-600");
                     conn.send({ type: 'GLOBAL_MSG', text: msg, colorClass: "border-gray-300 text-gray-600" });
@@ -463,7 +485,6 @@
             showGlobalMessage(msg, color);
             conn.send({ type: 'GLOBAL_MSG', text: msg, colorClass: color });
             
-            // Enable Host button locally and tell Guest to enable theirs
             document.getElementById(`p${playerNum}-click-btn`).disabled = false;
             conn.send({ type: 'CLICK_START' });
             
@@ -485,7 +506,6 @@
         function registerClick() {
             let newClicks = (playerNum === 1 ? ++p1Clicks : ++p2Clicks);
             updateClicks(playerNum, newClicks);
-            // Instantly send updated count to partner
             conn.send({ type: 'CLICK_UPDATE', player: playerNum, clicks: newClicks });
         }
 
@@ -495,21 +515,15 @@
         }
 
         function evaluateClickRound() {
-            // Disable Host buttons locally and tell Guest to disable theirs
             document.getElementById('p1-click-btn').disabled = true;
             document.getElementById('p2-click-btn').disabled = true;
             conn.send({ type: 'CLICK_END' });
             
             let winner = 0;
-            if (p1Clicks > p2Clicks) { winner = 1; p1Wins++; }
-            else if (p2Clicks > p1Clicks) { winner = 2; p2Wins++; }
-			
-			// reset clicks
-			p1Clicks = p2Clicks = 0;
-            updateClicks(1, 0); updateClicks(2, 0);
-            conn.send({ type: 'SYNC_CLICKS', p1: 0, p2: 0 });
+            if(p1Clicks > p2Clicks) { winner = 1; p1Wins++; }
+            else if(p2Clicks > p1Clicks) { winner = 2; p2Wins++; }
 
-            if (winner !== 0) {
+            if(winner !== 0) {
                 let winCount = winner === 1 ? p1Wins : p2Wins;
                 markRoundWin(winner, winCount);
                 conn.send({ type: 'ROUND_WIN', player: winner, round: winCount });
@@ -518,12 +532,15 @@
             let name1 = isHost ? myName : partnerName;
             let name2 = isHost ? partnerName : myName;
 
-            if (p1Wins === 2 || p2Wins === 2) {
+            if(p1Wins === 2 || p2Wins === 2) {
                 let champ = p1Wins === 2 ? name1 : name2;
                 let colorClass = p1Wins === 2 ? "border-blue-500 text-blue-600" : "border-pink-500 text-pink-600";
                 let msg = `MATCH OVER! ${champ} Wins!`;
                 showGlobalMessage(msg, colorClass);
                 conn.send({ type: 'GLOBAL_MSG', text: msg, colorClass: colorClass });
+                
+                // Auto-jump to menu
+                setTimeout(() => { if (isHost) requestMenu(); }, 4000);
             } else {
                 let roundResult = winner === 0 ? "Tie Round!" : `${winner === 1 ? name1 : name2} takes the round!`;
                 showGlobalMessage(roundResult, "border-purple-400 text-purple-600");
@@ -534,7 +551,7 @@
         }
 
         function markRoundWin(player, roundNum) {
-            if (roundNum <= 2) {
+            if(roundNum <= 2) {
                 const star = document.getElementById(`p${player}-win-${roundNum}`);
                 star.classList.remove('opacity-30');
                 gsap.fromTo(star, { scale: 0, rotation: -180 }, { scale: 1, rotation: 0, duration: 0.6, ease: "elastic.out(1, 0.5)" });
@@ -551,18 +568,14 @@
         }
 
         function buildGrid(player, deck, backClass, iconColor) {
-			const grid = document.getElementById(`p${player}-memory-grid`);
+            const grid = document.getElementById(`p${player}-memory-grid`);
             grid.innerHTML = '';
             deck.forEach((emoji, index) => {
                 const card = document.createElement('div');
-				card.className = `flip-card p${player}-card-${index}`;
-				card.innerHTML = `<div class="flip-card-inner">
-				<div class="flip-card-front text-gray-300">&nbsp;</div>
-				<div class="flip-card-back ${backClass} ${iconColor} font-black">${emoji}</div>
-				</div>`;
-				
-				if (player === playerNum) card.addEventListener('click', () => handlePuzzleClick(index, emoji, card));
-				grid.appendChild(card);
+                card.className = `flip-card p${player}-card-${index}`;
+                card.innerHTML = `<div class="flip-card-inner"><div class="flip-card-front text-gray-300">?</div><div class="flip-card-back ${backClass} ${iconColor} font-black">${emoji}</div></div>`;
+                if(player === playerNum) card.addEventListener('click', () => handlePuzzleClick(index, emoji, card));
+                grid.appendChild(card);
             });
             gsap.from(`#p${player}-memory-grid .flip-card`, { scale: 0, opacity: 0, duration: 0.4, stagger: 0.02, ease: "back.out(1.2)" });
         }
@@ -575,9 +588,7 @@
             if (localState.flipped.length === 2) setTimeout(checkMatch, 600);
         }
 
-        function flipCardVisual(player, index) {
-			document.querySelector(`.p${player}-card-${index}`).classList.add('flipped');
-		}
+        function flipCardVisual(player, index) { document.querySelector(`.p${player}-card-${index}`).classList.add('flipped'); }
 
         function checkMatch() {
             const [card1, card2] = localState.flipped;
@@ -591,6 +602,9 @@
                     let color = playerNum === 1 ? 'border-blue-500 text-blue-600' : 'border-pink-500 text-pink-600';
                     showGlobalMessage(msg, color);
                     conn.send({ type: 'GLOBAL_MSG', text: msg, colorClass: color });
+
+                    // Auto-jump to menu
+                    setTimeout(() => { requestMenu(); }, 4000);
                 }
             } else {
                 card1.element.classList.remove('flipped'); card2.element.classList.remove('flipped');
